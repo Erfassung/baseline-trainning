@@ -1,103 +1,87 @@
-# 🧠 NDVI-Based Crop Classification Pipeline
+# 📦 UAV Crop Classification using Patch-Based Random Forest
 
-This repository contains a full pipeline for training a crop classification model using NDVI-based image patches. It includes patch extraction, label filtering based on purity, metadata generation, and final model training and evaluation with PDF reporting.
+A machine learning pipeline for classifying crop types from UAV multispectral imagery using patch-level analysis and Random Forest classifier.
+
+## 🚀 Features Implemented
+
+* ✅ Patch extraction from orthomosaic TIFFs using polygon-labeled shapefile
+* ✅ Supports **multi-size patch testing**: `128x128`, `256x256`, and non-square `242x272`
+* ✅ Filters mixed-label patches to ensure clean supervision
+* ✅ Feature extraction per patch:
+
+  * Mean / Std / Max of 10 spectral bands
+  * NDVI & GNDVI vegetation indices
+* ✅ Class balancing with **SMOTE** (only when safe)
+* ✅ RandomForestClassifier with `class_weight="balanced"`
+* ✅ Train-test split with stratification (80/20)
+* ✅ Accuracy reporting + `classification_report`
+* ✅ Automatic confusion matrix PNG export per patch size
+* ✅ Accuracy comparison bar chart: `patch_size_accuracy_bar.png`
 
 ---
 
-## 📁 Project Structure
+## 🧾 Required Inputs
 
-```
-project_ms/
-├── images/                        # Raw NDVI GeoTIFF files (multiple tiles)
-├── label.tif                      # Rasterized label map (plot_IDs from shapefile)
-├── md_FieldSHP.shp/.dbf/.shx      # Plot polygon shapefile with crop metadata
-├── output/                        # Output patches and metadata
-├── cut_and_check_patches.py      # Patch slicing tool with purity check
-├── prepare_training_data.py      # Merge all metadata.csv files into one
-├── train_model_from_merged.py    # Model training and PDF report generation
-```
+* **TIFF images**: UAV-captured multispectral reflectance orthophotos
+* **Shapefile** (`.shp`, `.shx`, `.dbf`, etc.): contains crop-type polygons with field `crop`
+* **Folder structure**:
+
+  ```
+  Project/
+  ├── ms data/
+  │   ├── UAV3-MS/          # Contains .tif images
+  │   └── metadata/
+  │       └── md_FieldSHP/  # Contains shapefile components
+  ```
 
 ---
 
-## 🚀 Step-by-Step Usage
+## 📂 Output
 
-### 1. Patch Extraction from NDVI Images
+After running the script, you will get:
+
+* `confusion_matrix_<WxH>.png` for each patch size
+* `patch_predictions_<WxH>.csv` with per-patch prediction results
+* `patch_size_accuracy_bar.png` comparing different patch sizes
+
+---
+
+## 🧠 How to Run
+
+Install dependencies:
 
 ```bash
-python cut_and_check_patches.py \
-  --image E:/Erfassung/project_ms/images/your_tile.tif \
-  --label E:/Erfassung/project_ms/label.tif \
-  --output E:/Erfassung/project_ms/output \
-  --patch_height 242 --patch_width 272 \
-  --stride_y 121 --stride_x 136
+pip install -r requirements.txt
 ```
 
-Repeat this for each NDVI tile. Each run generates:
-
-* `/output/images/*.tif`
-* `/output/labels/*.tif`
-* `/output/metadata.csv`
-
-Only patches with dominant labels and at least 90% purity are retained.
-
----
-
-### 2. Merge Metadata
+Run the script:
 
 ```bash
-python prepare_training_data.py
+python patch_rf_classifier_multi.py
 ```
 
-* Finds all metadata.csv files
-* Merges them into one: `merged_metadata.csv`
-* Generates a crop class bar plot: `label_distribution.png`
+---
+
+## 🔬 Next Suggestions (Optional Enhancements)
+
+* Export each patch as `.png` for manual review
+* Add GLCM-based texture features (contrast, homogeneity)
+* Add LightGBM or CNN/Vision Transformer comparison
+* Add time-aware modeling if image timestamps are available
 
 ---
 
-### 3. Train Model and Generate PDF Report
+## 📌 Authors / Group
 
-```bash
-python train_model_from_merged.py
-```
-
-This script will:
-
-* Read `merged_metadata.csv`
-* Extract NDVI statistics for each patch
-* Use manually defined plot\_ID → crop mapping
-* Train a RandomForest classifier
-* Output:
-
-  * `crop_class_distribution.png`
-  * `classification_report_summary.pdf`
-  * Console classification report + confusion matrix
+* ✍️ Code: Marius (with ChatGPT assist)
+* 📷 Data: UAV team
+* 🧠 Model logic: ML research group
 
 ---
 
-## 📝 PDF Report (What to Share)
+## 📄 License
 
-The PDF contains:
+MIT or Creative Commons (customizable)
 
-* Bar chart of class distribution
-* Detailed precision/recall/F1-score per crop
-* Confusion matrix in readable format
+Ready to push to GitHub and share with your group! 🚀
 
-Useful for documentation and team presentations.
-
----
-
-## 💡 Notes
-
-* Crop label mapping is hardcoded (edit `id_to_crop` in `train_model_from_merged.py`)
-* You can extend this to include Genotype, Area, etc. from the shapefile.
-* If needed, change the patch size or stride for finer spatial sampling.
-
----
-
-## 🙋 For Questions
-
-Contact: \[your name / email] or leave a GitHub issue.
-
----
-
-Happy patching & modeling 🌱
